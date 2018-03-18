@@ -1,0 +1,153 @@
+﻿@using PagedList.Mvc;
+
+@model WebApplication3.ViewModels.GridViewModel
+
+@{
+    ViewBag.Title = "Home Page";
+}
+
+
+@{
+    var grid1 = new WebGrid(source: Model.Customers, canPage: true, rowsPerPage: 2, ajaxUpdateContainerId: "gridContent");
+
+    @grid1.GetHtml(mode: WebGridPagerModes.All, tableStyle: "table table-bordered",
+                                  headerStyle: "header",
+                                  alternatingRowStyle: "alt",
+                                  selectedRowStyle: "select",
+                                  rowStyle: "description",
+                                  htmlAttributes: new { id = "positionGrid" },
+                                  fillEmptyRows: false,
+                                  columns: grid1.Columns(
+                                   grid1.Column("Id", format: (item) => item.GetSelectLink(item.Id.ToString())),
+                                   //grid1.Column(header: "Edit", format: (item) =>
+                                   //{
+                                   //    var link = Html.ActionLink("Edit", "Edit", new { id = item.Id });
+                                   //    return link;
+                                   //}),
+                                   grid1.Column("Action", format:
+                                            @<text>
+                                                <button class="edit-user display-mode">Edit</button>
+                                                <button class="delete-user display-mode">Delete</button>
+                                                <button class="save-user edit-mode">Save</button>
+                                                <button class="cancel-user edit-mode">Cancel</button>
+                                            </text>, style: "col3Width", canSort: false),
+                                    grid1.Column("Name", header: "Customer Name", format:
+                                            @<text>
+                                                <input type="hidden" name="ID" id="ID" value="@item.Id" />
+                                                <span class="display-mode"><label id="lblName">@item.Name</label></span>
+                                                <input type="text" id="Name" value="@item.Name" class="edit-mode" />
+                                            </text>, style: "colName", canSort: true),
+                                    grid1.Column("Address", header: "Adderess", format:
+                                            @<text>
+                                                 <span class="display-mode"><label id="lblAddress">@item.Address</label></span>
+                                                 <input type="text" id="Address" value="@item.Address" class="edit-mode" />
+                                            </text>, style: "colName", canSort: true),
+                                   grid1.Column("Phone", header: "Phone", format:
+                                             @<text>
+                                                 <span class="display-mode"> <label id="lblPhone">@item.Phone</label> </span>
+                                                 <input type="text" id="Phone" value="@item.Phone" class="edit-mode" />
+                                             </text>)))
+}
+
+<table>
+    <tr>
+        <td>&nbsp;</td>
+        <td>Name: <input type="text" id="newname" name="newname" /></td>
+        <td>Address:<input type="text" id="newaddress" name="newaddress" /></td>
+        <td>Phone:<input type="text" id="newphone" name="newphone" /></td>
+        <td><button class="insert-user">Insert</button></td>
+    </tr>
+</table>
+
+@Html.PagedListPager(Model.Customers, page => Url.Action("Index", new RouteValueDictionary()
+{
+{ "Page", page }
+}), PagedListRenderOptions.ClassicPlusFirstAndLast)
+
+@section Scripts{
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $('.edit-mode').hide();
+            $('.edit-user, .cancel-user').on('click', function () {
+                var tr = $(this).parents('tr:first');
+                tr.find('.edit-mode, .display-mode').toggle();
+            });
+
+            $('.insert-user').on('click', function () {
+                var Name = $('#newname').val();
+                var Address = $('#newaddress').val();
+                var Phone = $('#newphone').val();
+                var UserModel = {
+                    "Name": Name,
+                    "Address": Address,
+                    "Phone": Phone,
+                    "Id": null
+                };
+                $.ajax({
+                    url: '/Home/AddCustomer/',
+                    data: JSON.stringify(UserModel),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    success: function (data) {
+                        console.log(data);
+                    }
+                });
+            });
+
+            $('.save-user').on('click', function () {
+                var tr = $(this).parents('tr:first');
+                var Name = tr.find("#Name").val();
+                var Phone = tr.find("#Phone").val();
+                var Address = tr.find('#Address').val();
+                var UserID = tr.find("#ID").val();
+                tr.find("#lblName").text(Name);
+                tr.find("#lblPhone").text(Phone);
+                tr.find('.edit-mode, .display-mode').toggle();
+                var UserModel =
+                    {
+                        "ID": UserID,
+                        "Name": Name,
+                        "Phone": Phone,
+                        "Address": Address
+                    };
+                //console.log(UserModel);
+                $.ajax({
+                    url: '/Home/SaveCustomer/',
+                    data: JSON.stringify(UserModel),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    success: function (data) {
+                        console.log(data);
+                        var resp = JSON.parse(data);
+                        if (resp.status == 'success') {
+                            alert('saved!')
+                        }
+                    }
+                });
+            });
+
+            $('.delete-user').on('click', function () {
+                if (!confirm('Are you sure?'))
+                    return false;
+
+                var tr = $(this).parents('tr:first');
+                var UserID = tr.find("#ID").val();
+                $.ajax({
+                    url: '/Home/DeleteCustomer/' + UserID,
+                    //data: JSON.stringify(UserModel),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    success: function (data) {
+                        console.log(data);
+                        var resp = JSON.parse(data);
+                        if (resp.status == 'success') {
+                            tr.remove();
+                        }
+                    }
+                });
+            });
+        })
+    </script>
+}
