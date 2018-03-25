@@ -86,7 +86,7 @@ namespace WebApplication3.Controllers
                     cus.Phone = customer.Phone;
 
                     if (db.SaveChanges() > 0)
-                        return Json(new { status = "success", response = cus }, JsonRequestBehavior.AllowGet);
+                        return Json(new { status = "success", response = cus });
                     else
                         return Json(new { status = "failed", reason = "could not save" });
                 }
